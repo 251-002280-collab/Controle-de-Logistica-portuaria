@@ -1,6 +1,6 @@
 Controle de Logística Portuária
 
-Projeto final da disciplina Teoria das Estruturas de Dados. Sistema em Python, executado pelo terminal (CLI), que integra Fila, Pilha, Lista e Árvore para simular o núcleo lógico de um sistema de logística portuária, com persistência em arquivo texto.
+Projeto final da disciplina Teoria das Estruturas de Dados. Sistema em Python, executado pelo terminal (CLI), que integra Lista, Fila, Pilha e Árvore para simular o núcleo lógico de um sistema de logística portuária, com persistência em arquivo texto.
 
 1. Como executar
 
@@ -15,8 +15,8 @@ O sistema inicia totalmente vazio. Para guardar o que foi cadastrado, use a opç
 
 Roteiro rápido de teste
 Menu 1 (Lista / Frota) → 1 Cadastrar veículo → cadastre alguns veículos → 2 Listar.
-Menu 2 (Fila) → 1 Adicionar caminhão à fila, usando o ID de um veículo da frota → 2 Visualizar fila.
-Menu 3 (Pilha) → 1 Empilhar contêiner → 2 Visualizar pilha (o topo aparece marcado).
+Menu 2 (Fila de Caminhões) → 1 Adicionar caminhão à fila, usando o ID de um veículo da frota → 2 Visualizar fila.
+Menu 3 (Pilha de Contêineres) → 1 Empilhar contêiner → 2 Visualizar pilha (o topo aparece marcado).
 Menu 4 (Rotas / Árvore) → 1 Adicionar porto ou rota (o primeiro nó é um porto de origem), depois adicione filhos informando o nome do nó pai, por exemplo Santos → Rota Atlântico Norte → Roterdã.
 Menu 5 para salvar, escolha 7 para sair, abra o programa novamente e use 6 para carregar.
 2. Visão geral do funcionamento
@@ -36,12 +36,16 @@ As opções 1 a 4 abrem um submenu com as operações próprias de cada estrutur
 
 Todos os dados ficam em memória em quatro variáveis globais. O arquivo só é lido ou escrito quando o usuário escolhe Salvar ou Carregar.
 
-Estrutura	Variável	Tipo Python	Papel na logística portuária
-Lista	frota	list	Registro geral da frota de veículos e transportadoras
+Estrutura	Variável	Tipo Python	Papel no porto
+Lista	frota	list	Frota de veículos e transportadoras
 Fila	fila	collections.deque	Ordem de chegada dos caminhões no pátio
 Pilha	pilha	list	Empilhamento de contêineres no navio ou pátio
 Árvore	arvore	dict aninhado	Rotas marítimas, portos intermediários e destinos finais
 3. Justificativa técnica das estruturas
+Lista - Frota de veículos
+
+A frota não segue ordem de atendimento: é preciso consultar, alterar ou excluir qualquer veículo, a qualquer momento. A lista permite acesso por posição (índice) e por chave (ID). É a estrutura adequada para um cadastro dinâmico que cresce e diminui sem regra de ordem.
+
 Fila (FIFO) - Caminhões aguardando embarque
 
 No pátio, o caminhão que chegou primeiro deve ser liberado primeiro. Isso é o comportamento FIFO (First In, First Out): a inserção ocorre sempre no fim e a liberação sempre no início. Usamos collections.deque porque popleft() remove do início em tempo O(1), enquanto list.pop(0) seria O(n), pois desloca todos os elementos restantes. Em um porto com grande volume de caminhões, essa diferença importa.
@@ -49,10 +53,6 @@ No pátio, o caminhão que chegou primeiro deve ser liberado primeiro. Isso é o
 Pilha (LIFO) - Empilhamento de contêineres
 
 Contêineres empilhados fisicamente só podem ser retirados pelo topo: o último a entrar é o primeiro a sair. Isso é o comportamento LIFO (Last In, First Out). Usamos list com append() (empilhar) e pop() (desempilhar), ambos O(1) no fim da lista, que funciona como o topo. Para chegar a um contêiner mais abaixo, é preciso desempilhar os que estão acima dele, e o sistema avisa quantos são.
-
-Lista - Frota de veículos
-
-A frota não segue ordem de atendimento: é preciso consultar, alterar ou excluir qualquer veículo, a qualquer momento. A lista permite acesso por posição (índice) e por chave (ID). É a estrutura adequada para um cadastro dinâmico que cresce e diminui sem regra de ordem.
 
 Árvore - Rotas marítimas
 
@@ -84,10 +84,10 @@ Listar	visualizar_fila()	percorre com enumerate, mostrando a posição (1 = pró
 Consultar	consultar_proximo_caminhao()	fila[0], sem remover
 Remover (liberar)	liberar_proximo_caminhao()	fila.popleft() remove e retorna o primeiro
 Pesquisar	pesquisar_caminhao_fila()	busca por ID ou trecho da placa
-Remover específico (exceção)	remover_caminhao_especifico()	fila.remove() em qualquer posição, com confirmação
+Remover específico	remover_caminhao_especifico()	fila.remove() em qualquer posição, com confirmação
 Atualizar	editar_veiculo()	ao editar um veículo da frota, os dados do caminhão correspondente na fila também são atualizados
 
-A regra FIFO vale para o fluxo normal: a entrada só acontece no fim (adicionar_caminhao_fila) e a liberação só acontece no início (liberar_proximo_caminhao). A remoção de um caminhão específico é uma exceção deliberada, pensada para o caso em que um caminhão desiste ou é cancelado no pátio antes de ser liberado. Ela não altera a ordem dos demais e exige confirmação.
+No fluxo normal, a regra "insere no fim, remove no início" é garantida: só existe uma função de entrada (adicionar_caminhao_fila) e uma de liberação (liberar_proximo_caminhao). A remoção de um caminhão específico é uma exceção deliberada, para o caso de um caminhão desistir ou ser cancelado antes da liberação; ela não altera a ordem dos demais e exige confirmação.
 
 4.3 Pilha (list)
 python
@@ -161,8 +161,8 @@ Para a árvore, a função recursiva caminhos_completos gera um caminho para cad
 Erros de gravação são tratados e informados ao usuário.
 Carregar (carregar_dados)
 Se o arquivo não existir, avisa o usuário e não altera nada.
-Lê o arquivo linha a linha e separa cada linha com split("|"); o primeiro campo decide em qual estrutura o registro entra (interpretar_linha).
-Os registros são montados em estruturas temporárias. Os dados em memória só são substituídos no final. Se o arquivo tiver linhas, mas nenhuma válida, os dados atuais são mantidos. Se já houver dados em memória, o sistema pede confirmação antes de substituí-los (isso vale também para um arquivo vazio, que resulta em um sistema vazio).
+Lê o arquivo linha a linha, separa cada linha com split("|") e usa o primeiro campo para decidir em qual estrutura inserir (interpretar_linha).
+Os registros são montados em estruturas temporárias, e os dados em memória só são substituídos no final. Se o arquivo tiver linhas, mas nenhuma válida, os dados atuais são mantidos. Se já houver dados em memória, o sistema pede confirmação.
 A frota é carregada antes da fila, porque a fila depende dela (um caminhão só entra se o veículo existir na frota).
 Para ARVORE, desce pelos nomes usando buscar_filho, que cria o nó caso ainda não exista e reaproveita nós já criados por outras linhas.
 Linhas inválidas (campos faltando, ID duplicado, caminhão fora da frota, peso inválido) são ignoradas com aviso, sem derrubar o programa.
@@ -175,7 +175,8 @@ A função ler_texto troca qualquer | digitado pelo usuário por /, evitando que
 O arquivo está dividido em blocos, cada um com funções de responsabilidade única:
 
 Estruturas em memória: as quatro variáveis globais (iniciam vazias).
-Funções auxiliares: titulo (cabeçalho dos menus), ler_texto (texto não vazio), para_inteiro, ler_inteiro (repete até receber um número válido), ler_peso, validar_peso, confirmar e buscar (busca genérica por campo). Para exibição: mostrar_veiculo, mostrar_caminhao e mostrar_container.
+Funções de entrada e auxiliares: ler_texto (texto não vazio), para_inteiro, ler_inteiro (repete até receber um número válido), ler_peso, validar_peso, confirmar, buscar (busca genérica por campo) e titulo (cabeçalho dos menus).
+Exibição: mostrar_veiculo, mostrar_caminhao, mostrar_container.
 Validações: validar_veiculo, validar_caminhao, validar_container.
 Lista: cadastrar_veiculo, listar_veiculos, pesquisar_veiculo, editar_veiculo, excluir_veiculo.
 Fila: adicionar_caminhao_fila, visualizar_fila, consultar_proximo_caminhao, liberar_proximo_caminhao, pesquisar_caminhao_fila, remover_caminhao_especifico.
@@ -186,8 +187,8 @@ Menus: submenu, menu_frota, menu_fila, menu_pilha, menu_arvore e menu_principal.
 Fluxo de execução
 if __name__ == "__main__" chama menu_principal(), protegido contra Ctrl+C e Ctrl+D.
 O menu principal roda em um laço while True, lê a opção e chama a função correspondente.
-As opções 1 a 4 chamam funções (menu_frota, menu_fila, menu_pilha, menu_arvore) que usam o mesmo submenu. Ele recebe o nome do menu e um dicionário {número: (descrição, função)}, de modo que um único submenu serve para as quatro estruturas, sem repetir código.
+As opções 1 a 4 chamam menu_frota, menu_fila, menu_pilha e menu_arvore, que usam o mesmo submenu. Ele recebe o nome do menu e um dicionário {número: (descrição, função)}, de modo que um único submenu serve para as quatro estruturas, sem repetir código.
 A opção 7 encerra o laço, oferece salvar os dados e finaliza o programa. Opções inválidas exibem uma mensagem e o menu é mostrado novamente.
 7. Resumo
 
-O sistema mantém quatro estruturas em memória: uma lista (list) para a frota de veículos, uma fila (deque) para os caminhões aguardando embarque, uma pilha (list) para os contêineres e uma árvore (dicionários aninhados) para as rotas marítimas. O usuário opera todas por menus numéricos, respeitando as regras de cada estrutura: a fila insere no fim e libera no início (com a remoção específica como exceção confirmada pelo usuário), a pilha opera só no topo, a lista acessa por ID ou posição e a árvore navega e insere de forma hierárquica. Os dados são salvos e carregados explicitamente em um único arquivo dados_sistema.txt, com um identificador por linha e campos separados por |.
+O sistema mantém quatro estruturas em memória: uma lista (list) para a frota de veículos, uma fila (deque) para os caminhões aguardando embarque, uma pilha (list) para os contêineres e uma árvore (dicionários aninhados) para as rotas marítimas. O usuário opera todas por menus numéricos, respeitando as regras de cada estrutura: a lista acessa por ID ou posição, a fila insere no fim e libera no início, a pilha opera só no topo e a árvore navega e insere de forma hierárquica. Os dados são salvos e carregados explicitamente em um único arquivo dados_sistema.txt, com um identificador por linha e campos separados por |.
