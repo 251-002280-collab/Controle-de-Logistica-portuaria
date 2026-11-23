@@ -167,7 +167,7 @@ Para escolher um nó, o usuário informa o nome (ou parte dele). Se houver mais 
 
 ## 5. Persistência em arquivo texto
 
-Todo o estado é gravado em um único arquivo, `dados_sistema.txt`, sem banco de dados, JSON, CSV ou pickle. Cada linha começa com um identificador da estrutura e os campos são separados por pipe (`|`):
+Todo o estado é gravado em um único arquivo, `dados_sistema.txt`, sem banco de dados. Cada linha começa com um identificador da estrutura e os campos são separados por pipe (`|`):
 
 ```text
 LISTA|101|ABC1D23|Transportes Atlântico|Carlos Silva|Soja
