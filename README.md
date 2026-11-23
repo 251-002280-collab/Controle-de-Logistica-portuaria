@@ -1,4 +1,4 @@
-# Controle-de-Log-stica-Portu-ria
+# Controle-de-Logistica-Portuaria
 projeto final de teoria de estruturas de dados
 # Controle de Logística Portuária
 
